@@ -62,7 +62,7 @@ env:
   SCITER_NASM_DEBVERSION: "2.14-1"
   LLVM_VERSION: "15.0.6"
   FLUTTER_VERSION: "3.24.5"
-  ANDROID_FLUTTER_VERSION: "3.24.5" 
+  ANDROID_FLUTTER_VERSION: "3.24.5"
   FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
@@ -78,7 +78,6 @@ env:
   MACOS_P12_BASE64: "${{ secrets.MACOS_P12_BASE64 }}"
   UPLOAD_ARTIFACT: 'true'
   SIGN_BASE_URL: "${{ secrets.SIGN_BASE_URL }}"
-  STATUS_URL: "${{ secrets.GENURL }}/updategh"
 
 jobs:
   generate-bridge-linux:
@@ -119,24 +118,6 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Set rdgen value
-        if: ${{ fromJson(inputs.extras).rdgen == 'true' }}
-        run: |
-          echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $GITHUB_ENV
-
-      - name: Set rdgen value
-        if: ${{ fromJson(inputs.extras).rdgen == 'false' }}
-        run: |
-          echo "STATUS_URL=${{ inputs.apiServer }}/api/updategh" >> $GITHUB_ENV
-
-      - name: Report Status
-        uses: fjogeleit/http-request-action@v1
-        continue-on-error: true
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "5% complete"}'
 
       - name: Maximize build space
         run: |
@@ -198,14 +179,6 @@ jobs:
           # only build cdylib
           sed -i  "s/\[\"cdylib\", \"staticlib\", \"rlib\"\]/\[\"cdylib\"\]/g" Cargo.toml
 
-      - name: Report Status
-        uses: fjogeleit/http-request-action@v1
-        continue-on-error: true
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "15% complete"}'
 
       - name: Restore bridge files
         if: matrix.job.arch == 'x86_64' || env.UPLOAD_ARTIFACT == 'true'
@@ -370,14 +343,6 @@ jobs:
           name: bridge-artifact
           path: ./
 
-      - name: Report Status
-        uses: fjogeleit/http-request-action@v1
-        continue-on-error: true
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "65% complete"}'
 
       - uses: rustdesk-org/run-on-arch-action@amd64-support
         name: Build rustdesk
@@ -598,23 +563,6 @@ jobs:
         run: |
           cp ./res/rustdesk-${{ env.VERSION }}-0-x86_64.pkg.tar.zst ./output/${{ inputs.filename }}-${{ matrix.job.arch }}.pkg.tar.zst
 
-      - name: send file to rdgen server
-        if: ${{ fromJson(inputs.extras).rdgen == 'true' }}
-        shell: bash
-        run: |
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-${{ matrix.job.arch }}.deb" -F "uuid=${{ inputs.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-${{ matrix.job.arch }}.rpm" -F "uuid=${{ inputs.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-suse-${{ matrix.job.arch }}.rpm" -F "uuid=${{ inputs.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-${{ matrix.job.arch }}.pkg.tar.zst" -F "uuid=${{ inputs.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
-
-      - name: send file to api server
-        if: ${{ fromJson(inputs.extras).rdgen == 'false' }}
-        shell: bash
-        run: |
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-${{ matrix.job.arch }}.deb" ${{ inputs.apiServer }}/api/save_custom_client
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-${{ matrix.job.arch }}.rpm" ${{ inputs.apiServer }}/api/save_custom_client
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-suse-${{ matrix.job.arch }}.rpm" ${{ inputs.apiServer }}/api/save_custom_client
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./output/${{ inputs.filename }}-${{ matrix.job.arch }}.pkg.tar.zst" ${{ inputs.apiServer }}/api/save_custom_client || true
 
       - name: Upload deb
         uses: actions/upload-artifact@master
@@ -623,32 +571,6 @@ jobs:
           name: ${{ inputs.filename }}-${{ matrix.job.arch }}.deb
           path: ./output/${{ inputs.filename }}-${{ matrix.job.arch }}.deb
 
-      - name: Report Status
-        uses: fjogeleit/http-request-action@v1
-        continue-on-error: true
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "Finished ${{ matrix.job.arch }}"}'
-
-      - name: failed
-        if: failure()
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "Generation failed, try again"}'
-
-      - name: failed
-        if: cancelled()
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "Generation cancelled, try again"}'
 
   build-appimage:
     name: Build appimage ${{ matrix.job.target }}
@@ -699,17 +621,11 @@ jobs:
           sudo appimage-builder --skip-tests --recipe ./AppImageBuilder-${{ matrix.job.arch }}.yml
           sudo mv ./rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.AppImage ./${{ inputs.filename }}-${{ matrix.job.arch }}.AppImage
 
-      - name: send file to rdgen server
-        if: ${{ fromJson(inputs.extras).rdgen == 'true' }}
-        shell: bash
-        run: |
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./appimage/${{ inputs.filename }}-${{ matrix.job.arch }}.AppImage" -F "uuid=${{ inputs.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-          
-      - name: send file to api server
-        if: ${{ fromJson(inputs.extras).rdgen == 'false' }}
-        shell: bash
-        run: |
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./appimage/${{ inputs.filename }}-${{ matrix.job.arch }}.AppImage" ${{ inputs.apiServer }}/api/save_custom_client
+      - name: Upload AppImage
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ inputs.filename }}-${{ matrix.job.arch }}.AppImage
+          path: ./appimage/${{ inputs.filename }}-${{ matrix.job.arch }}.AppImage
 
   build-flatpak:
     name: Build flatpak ${{ matrix.job.target }}${{ matrix.job.suffix }}
@@ -790,46 +706,10 @@ jobs:
             flatpak-builder --user --install-deps-from=flathub -y --force-clean --repo=repo ./build ./rustdesk.json
             flatpak build-bundle ./repo ${{ inputs.filename }}-${{ matrix.job.arch }}.flatpak com.rustdesk.RustDesk
 
-      - name: send file to rdgen server
-        if: ${{ fromJson(inputs.extras).rdgen == 'true' }}
-        continue-on-error: true
-        shell: bash
-        run: |
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./flatpak/${{ inputs.filename }}-${{ matrix.job.arch }}.flatpak" -F "uuid=${{ inputs.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-          
-      - name: send file to api server
-        if: ${{ fromJson(inputs.extras).rdgen == 'false' }}
-        continue-on-error: true
-        shell: bash
-        run: |
-          curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" -F "file=@./flatpak/${{ inputs.filename }}-${{ matrix.job.arch }}.flatpak" ${{ inputs.apiServer }}/api/save_custom_client
-
-
-
-  deploy:
-    needs: [build-rustdesk-linux,build-flatpak,build-appimage]
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: Set rdgen value
-        if: ${{ fromJson(inputs.extras).rdgen == 'true' }}
-        run: |
-          echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $GITHUB_ENV
-
-      - name: Set rdgen value
-        if: ${{ fromJson(inputs.extras).rdgen == 'false' }}
-        run: |
-          echo "STATUS_URL=${{ inputs.apiServer }}/api/updategh" >> $GITHUB_ENV
-          
-      - name: Report Status
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: ${{ env.STATUS_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ inputs.uuid }}", "status": "Success"}'
-
-      - uses: geekyeggo/delete-artifact@v5
+      - name: Upload Flatpak
+        uses: actions/upload-artifact@master
         continue-on-error: true
         with:
-            name: ${{ inputs.filename }}-*.deb
+          name: ${{ inputs.filename }}-${{ matrix.job.arch }}.flatpak
+          path: ./flatpak/${{ inputs.filename }}-${{ matrix.job.arch }}.flatpak
+

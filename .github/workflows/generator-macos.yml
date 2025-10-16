@@ -108,8 +108,6 @@ jobs:
               arch: aarch64,
               vcpkg-triplet: arm64-osx,
             }
-    env:
-      STATUS_URL: ${{ fromJson(inputs.extras).rdgen == 'true' && format('{0}/updategh', secrets.GENURL) || format('{0}/api/updategh', inputs.apiServer) }}
 
     steps:
       - name: Export GitHub Actions cache environment variables
@@ -650,7 +648,6 @@ jobs:
           mv "${{ inputs.appname }}-${{ matrix.job.arch }}.dmg" $GITHUB_WORKSPACE/
   
       - name: Rename rustdesk
-        if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           cd $GITHUB_WORKSPACE
           echo "Directory contents:"
@@ -668,24 +665,8 @@ jobs:
             exit 1
           fi
 
-      - name: send file to rdgen server
-        if: ${{ fromJson(inputs.extras).rdgen == 'true' }}
-        shell: bash
-        run: |
-          curl -i -X POST \
-            -H "Content-Type: multipart/form-data" \
-            -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" \
-            -F "file=@$GITHUB_WORKSPACE/${{ inputs.filename }}-${{ matrix.job.arch }}.dmg" \
-            -F "uuid=${{ inputs.uuid }}" \
-            "${{ secrets.GENURL }}/save_custom_client"
-        
-
-      - name: send file to api server
-        if: ${{ fromJson(inputs.extras).rdgen == 'false' }}
-        shell: bash
-        run: |
-          curl -i -X POST \
-            -H "Content-Type: multipart/form-data" \
-            -H "Authorization: Bearer ${{ fromJson(inputs.extras).token }}" \
-            -F "file=@$GITHUB_WORKSPACE/${{ inputs.filename }}-${{ matrix.job.arch }}.dmg" \
-            "${{ inputs.apiServer }}/api/save_custom_client"
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ inputs.filename }}-${{ matrix.job.arch }}.dmg
+          path: ${{ github.workspace }}/${{ inputs.filename }}-${{ matrix.job.arch }}.dmg
