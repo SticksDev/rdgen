@@ -118,7 +118,7 @@ jobs:
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Checkout source code
-        if: ${{ env.VERSION != 'master' }}
+        if: env.VERSION != 'master'
         uses: actions/checkout@v4
         with:
             repository: rustdesk/rustdesk
@@ -126,7 +126,7 @@ jobs:
             submodules: recursive
   
       - name: Checkout source code
-        if: ${{ env.VERSION == 'master' }}
+        if: env.VERSION == 'master'
         uses: actions/checkout@v4
         with:
             repository: rustdesk/rustdesk
@@ -270,7 +270,7 @@ jobs:
           prefix-key: ${{ matrix.job.os }}
 
       - name: Magick stuff for macOS
-        if: ${{ inputs.iconlink != 'false' }}
+        if: inputs.iconlink != 'false'
         continue-on-error: false
         shell: bash
         run: |
@@ -282,10 +282,10 @@ jobs:
           mkdir -p ./rustdesk/data/flutter_assets/assets
 
           # Download icon using curl with additional SSL options
-          curl -k -L --tlsv1.2 --proto =https --ssl-reqd \
+          curl -k -L --tlsv1.2 --proto=https --ssl-reqd \
             -H "User-Agent: Mozilla/5.0" \
-            "${{ fromJson(inputs.iconlink).url }}/get_png?filename=${{ fromJson(inputs.iconlink).file }}&uuid=${{ fromJson(inputs.iconlink).uuid }}" \
-            -o ./res/icon.png || wget --no-check-certificate -O ./res/icon.png "${{ fromJson(inputs.iconlink).url }}/get_png?filename=${{ fromJson(inputs.iconlink).file }}&uuid=${{ fromJson(inputs.iconlink).uuid }}"
+            "${{ inputs.iconlink }}" \
+            -o ./res/icon.png || wget --no-check-certificate -O ./res/icon.png "${{ inputs.iconlink }}"
             
           # Backup existing files (if they exist)
           [ -f "./res/32x32.png" ] && mv ./res/32x32.png ./res/32x32.png.bak
@@ -380,7 +380,7 @@ jobs:
           ls -lh rustdesk/data/flutter_assets/assets/
 
       - name: replace flutter icons
-        if: ${{ inputs.iconlink != 'false' }}
+        if: inputs.iconlink != 'false'
         continue-on-error: false
         shell: bash
         run: |
@@ -404,7 +404,7 @@ jobs:
           cd ..
       
       - name: ui.rs
-        if: ${{ inputs.iconlink != 'false' }}
+        if: inputs.iconlink != 'false'
         continue-on-error: true
         shell: bash
         run: |
@@ -417,7 +417,7 @@ jobs:
 
       - name: fix connection delay
         continue-on-error: false
-        if: ${{ fromJson(inputs.extras).delayFix == 'true' }}
+        if: fromJson(inputs.extras).delayFix == 'true'
         shell: bash
         run: |
           sed -i -e 's|!key.is_empty()|false|' ./src/client.rs
@@ -530,7 +530,7 @@ jobs:
           rustc -V
       
       - name: icon svg handling
-        if: ${{ inputs.iconlink != 'false' }}
+        if: inputs.iconlink != 'false' 
         continue-on-error: false
         shell: bash
         run: |
@@ -546,19 +546,19 @@ jobs:
           rm ./temp_icon.pbm
 
       - name: logo handling
-        if: ${{ inputs.logolink != 'false' }}
+        if: inputs.logolink != 'false'
         continue-on-error: false
         shell: bash
         run: |
           ASSETS_DIR="build/macos/Build/Products/Release/RustDesk.app/Contents/Frameworks/App.framework/Versions/Current/Resources/flutter_assets/assets"
           mkdir -p "$ASSETS_DIR"
-          curl -k -L --tlsv1.2 --proto =https --ssl-reqd \
+          curl -k -L --tlsv1.2 --proto=https --ssl-reqd \
             -H "User-Agent: Mozilla/5.0" \
-            "${{ fromJson(inputs.logolink).url }}/get_png?filename=${{ fromJson(inputs.logolink).file }}&uuid=${{ fromJson(inputs.logolink).uuid }}" \
+            "${{ inputs.logolink }}" \
             -o "$ASSETS_DIR/logo.png" || \
           wget --no-check-certificate \
             -O "$ASSETS_DIR/logo.png" \
-            "${{ fromJson(inputs.logolink).url }}/get_png?filename=${{ fromJson(inputs.logolink).file }}&uuid=${{ fromJson(inputs.logolink).uuid }}"
+            "${{ inputs.logolink }}"
 
 
       - name: Sign macOS app bundle
