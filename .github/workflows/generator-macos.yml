@@ -6,52 +6,52 @@ on:
       server:
         description: 'Rendezvous Server'
         required: true
-        default: ''
+        default: 'rmm.hep.gg'
         type: string
       key:
         description: 'Public Key'
         required: true
-        default: ''
+        default: 'zxXxN7liheK7qZfMt4pgo061lKELBYl2M65kEOGvUhr7kl8mD4kCjjMlU89XMDVTdIRIgQYDDmrGxgXm'
         type: string
       apiServer:
         description: 'API Server'
         required: true
-        default: ''
+        default: 'https://rmm.hep.gg'
         type: string
       custom:
         description: "Custom JSON"
         required: true
-        default: ''
+        default: '{}'
         type: string
       uuid:
         description: "uuid of request"
         required: true
-        default: ''
+        default: '7b28fba5-5bf9-40ee-9557-42a0d1895bb5'
         type: string
       iconlink:
         description: "icon link"
         required: false
-        default: 'false'
+        default: 'https://hep.gg/hydralogo.png'
         type: string
       logolink:
         description: "logo link"
         required: false
-        default: 'false'
+        default: 'https://hep.gg/hydralogo.png'
         type: string
       appname:
         description: "app name"
         required: true
-        default: 'rustdesk'
+        default: 'Team Hydra RMM'
         type: string
       filename:
         description: "Filename"
         required: true
-        default: 'rustdesk'
+        default: 'Team Hydra RMM'
         type: string
       extras:
         description: "extra inputs in json"
         required: true
-        default: '{}'
+        default: '{version: "1.4.2"}'
         type: string
 
 env:
